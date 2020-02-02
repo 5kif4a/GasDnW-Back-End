@@ -1,2 +1,2 @@
 # GasDnW
-Gas leak monitoring system
+Gas Detection and Warning
