@@ -18,30 +18,24 @@ CORS(app)
 app.config.from_object(cfg)
 
 
-@app.route('/mq2', methods=["GET, POST"])
+@app.route('/mq2', methods=["POST"])
 def get_data_from_mq2():
-    if request.method == "GET":
-        return "MQ2"
-    if request.method == "POST":
-        print(request.get_json())
-        response = app.response_class(
-            response="OK",
-            status=200
-        )
-        return response
+    print(request.get_json())
+    response = app.response_class(
+        response="OK",
+        status=200
+    )
+    return response
 
 
-@app.route('/dht', methods=["GET, POST"])
+@app.route('/dht', methods=["POST"])
 def get_data_from_dht():
-    if request.method == "GET":
-        return "dht"
-    if request.method == "POST":
-        print(request.get_json())
-        response = app.response_class(
-            response="OK",
-            status=200,
-        )
-        return response
+    print(request.get_json())
+    response = app.response_class(
+        response="OK",
+        status=200,
+    )
+    return response
 
 
 # def gen_video(camera_number):
