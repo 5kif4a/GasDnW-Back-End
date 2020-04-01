@@ -19,7 +19,7 @@ app.config.from_object(cfg)
 
 
 @app.route('/mq2', methods=["GET, POST"])
-def get_sensor_data():
+def get_data_from_mq2():
     if request.method == "GET":
         return "MQ2"
     if request.method == "POST":
@@ -32,8 +32,8 @@ def get_sensor_data():
         return response
 
 
-@app.route('/dht')
-def get_temperature():
+@app.route('/dht', methods=["GET, POST"])
+def get_data_from_dht():
     if request.method == "GET":
         return "dht"
     if request.method == "POST":
