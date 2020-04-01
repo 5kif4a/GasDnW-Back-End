@@ -26,8 +26,7 @@ def get_data_from_mq2():
         print(request.get_json())
         response = app.response_class(
             response="OK",
-            status=200,
-            mimetype='application/json'
+            status=200
         )
         return response
 
@@ -41,7 +40,6 @@ def get_data_from_dht():
         response = app.response_class(
             response="OK",
             status=200,
-            mimetype='application/json'
         )
         return response
 
