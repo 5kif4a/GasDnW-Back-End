@@ -1,62 +1,31 @@
-from flask import Flask, Response, request
+from flask import Flask
+from flask_admin import Admin
 from flask_cors import CORS
-# import cv2
-import time
-import random
-import json
+from flask_restful import Api
+from flask_sqlalchemy import SQLAlchemy
+from flask_migrate import Migrate
 
 from .config import cfg
 
-# cam_1 = cv2.VideoCapture(0)
-# cam_2 = cv2.VideoCapture(1)
-# cameras = [cam_1, cam_2]
-#
-# face_cascade = cv2.CascadeClassifier(r'D:\PyCharm Projects\GasDnW\haarcascade_frontalface_default.xml')
 app = Flask(__name__)
+app.config.from_mapping(cfg)
 
-CORS(app)
-app.config.from_object(cfg)
+db = SQLAlchemy(app)  # SQLAlchemy
+migrate = Migrate(app, db)  # Flask-Migrate
 
+with app.app_context():
+    if db.engine.url.drivername == 'sqlite':
+        migrate.init_app(app, db, render_as_batch=True)
+    else:
+        migrate.init_app(app, db)
 
-@app.route('/mq2', methods=["POST"])
-def get_data_from_mq2():
-    print(request.get_json())
-    return app.response_class(
-        response="OK",
-        status=200,
-    )
-
-
-@app.route('/dht', methods=["POST"])
-def get_data_from_dht():
-    print(request.get_json())
-    return app.response_class(
-        response="OK",
-        status=200,
-    )
+api = Api(app)  # Flask-RESTful
+admin = Admin(app, template_mode='bootstrap3')  # Flask-Admin
+CORS(app)  # Flask-CORS
 
 
-# def gen_video(camera_number):
-#     while True:
-#         _, frame = cameras[camera_number].read()
-#
-#         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-#
-#         faces = face_cascade.detectMultiScale(gray, 1.1, 4)
-#
-#         for (x, y, w, h) in faces:
-#             cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 0, 255), 3)
-#             cv2.putText(frame, "person", (x, y), cv2.FONT_HERSHEY_COMPLEX_SMALL, 1, 255)
-#
-#         _, buffer = cv2.imencode('.jpg', frame)
-#
-#         yield (b'--frame\r\n'
-#                b'Content-Type: image/jpeg\r\n\r\n' + bytearray(buffer) + b'\r\n')
-
-
-# @app.route('/camera/<int:camera_number>')
-# def video_feed(camera_number):
-#     return Response(gen_video(camera_number), mimetype='multipart/x-mixed-replace; boundary=frame')
+import api.views
+import api.admin
 
 
 if __name__ == '__main__':
