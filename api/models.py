@@ -109,7 +109,7 @@ class Report(db.Model):
     log_id = db.Column(db.Integer, db.ForeignKey('log.id'), nullable=True)
 
     def __repr__(self):
-        return f'<Report: DateTime: {self.date_time} - Content: {self.camera}>'
+        return f'<Report: DateTime: {self.created_at} - Content: {self.content}>'
 
     def as_dict(self):
         return {c.name: getattr(self, c.name) for c in self.__table__.columns}

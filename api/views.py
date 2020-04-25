@@ -2,7 +2,7 @@ from flask import request, Response
 from flask_restful import Resource
 
 from api.cv import gen_video
-from api.models import db, Device, MQ2Data, DHTData, Case, Log
+from api.models import db, Device, MQ2Data, DHTData, Case, Log, Report
 from api.utils import check_gas_level, LevelType
 from .app import api
 
@@ -198,12 +198,75 @@ class LogListAPI(Resource):
             return "Internal Server Error", 500
 
 
-class ReportView(Resource):
+class ReportListAPI(Resource):
     def get(self):
-        return
+        try:
+            reports = Report.query.order_by(Report.created_at.desc()).all()
+            resp = []
+            for report in reports:
+                obj = report.as_dict()
 
+                if report.case is not None:
+                    case = report.case
+                    obj['case_datetime'] = case.date_time
+                    obj['case_level'] = case.level
+                    obj['device_location'] = case.mq2_data[0].device.location
+                if report.log is not None:
+                    log = report.log
+                    obj['log_datetime'] = log.date_time
+                    obj['camera_location'] = log.camera.location
+
+                resp.append(obj)
+            return resp, 200
+        except Exception as e:
+            print(e)
+            return "Internal Server Error", 500
+
+
+class ReportAPI(Resource):
+    def get(self, report_id):
+        try:
+            report = Report.query.get(report_id)
+            resp = {
+                "created_at": report.created_at,
+                "content": report.content
+            }
+
+            if report.case is not None:
+                case = report.case
+                resp['case_datetime'] = case.date_time
+                resp['case_level'] = case.level
+                resp['case_note'] = case.note
+                resp['device_location'] = case.mq2_data[0].device.location
+                resp['mq2_data_list'] = [el.as_dict() for el in case.mq2_data]
+                resp['dht_data_list'] = [el.as_dict() for el in case.dht_data]
+            if report.log is not None:
+                log = report.log
+                resp['log_datetime'] = log.date_time
+                resp['log_recognized_objects'] = log.recognized_objects
+                resp['camera_location'] = log.camera.location
+
+            return resp, 200
+
+        except Exception as e:
+            print(e)
+            return "Internal Server Error", 500
+
+
+class CreateReportAPI(Resource):
     def post(self):
-        return
+        try:
+            request_data = request.get_json()
+            print(request_data)
+
+        except Exception as e:
+            print(e)
+            return "Internal Server Error", 500
+
+
+class GenerateReportAPI(Resource):
+    def get(self):
+        pass
 
 
 class NotificationView(Resource):
@@ -234,5 +297,9 @@ api.add_resource(LogAPI, '/logs/<int:log_id>')
 
 api.add_resource(CaseListAPI, '/cases')
 api.add_resource(LogListAPI, '/logs')
+
+api.add_resource(ReportAPI, '/reports/<int:report_id>')
+api.add_resource(CreateReportAPI, '/reports')
+api.add_resource(ReportListAPI, '/reports')
 
 api.add_resource(CameraAPI, '/camera/<int:camera_number>')
