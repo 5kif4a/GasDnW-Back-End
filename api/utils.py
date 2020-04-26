@@ -1,7 +1,14 @@
+import base64
 import enum
+import io
 import json
 from datetime import datetime
 from types import GeneratorType
+
+import pdfkit
+import plotly.graph_objects as go
+from flask import render_template, make_response
+from plotly import io
 
 
 # from api.models import db, Case
@@ -47,3 +54,45 @@ class Encoder(json.JSONEncoder):
         if isinstance(obj, GeneratorType):
             return str(obj.__next__())
         return json.JSONEncoder.default(self, obj)
+
+
+def create_plot(**data):
+    fig = go.Figure()
+
+    for i in range(len(data['y'])):
+        fig.add_trace(
+            go.Scatter(
+                x=data['x'],
+                y=data['y'][i],
+                name=data['legends'][i])
+        )
+
+    fig.update_layout(autosize=False,
+                      height=300,
+                      margin=dict(
+                          l=30,
+                          r=0,
+                          b=0,
+                          t=0
+                      ),
+                      legend_orientation="h",
+                      legend=dict(x=0, y=-.2))
+    return fig
+
+
+def convert_to_base64(fig):
+    svg = io.to_image(fig, format='svg')
+    svg_base64 = base64.b64encode(svg).decode('ascii')
+    return svg_base64
+
+
+def generate_pdf(template, context):
+    html = render_template(template, context=context)
+    import api.config as config
+    cfg = pdfkit.configuration(wkhtmltopdf=bytes(config.PATH_TO_WKHTMLTOPDF, 'utf8'))
+    pdf = pdfkit.from_string(html, False, configuration=cfg)
+    response = make_response(pdf)
+    response.headers['Content-Type'] = "application/pdf"
+    response.headers['Content-Disposition'] = "attachment"
+
+    return response

@@ -7,7 +7,7 @@ from flask_migrate import Migrate
 
 from .config import cfg
 
-app = Flask(__name__)
+app = Flask(__name__, template_folder='../templates', static_folder="../static")
 app.config.from_mapping(cfg)
 
 db = SQLAlchemy(app)  # SQLAlchemy

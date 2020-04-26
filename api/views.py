@@ -3,7 +3,7 @@ from flask_restful import Resource
 
 from api.cv import gen_video
 from api.models import db, Device, MQ2Data, DHTData, Case, Log, Report
-from api.utils import check_gas_level, LevelType
+from api.utils import check_gas_level, LevelType, generate_pdf, create_plot, convert_to_base64
 from .app import api
 
 
@@ -265,8 +265,54 @@ class CreateReportAPI(Resource):
 
 
 class GenerateReportAPI(Resource):
-    def get(self):
-        pass
+    def get(self, report_id):
+        report = Report.query.get(report_id)
+        context = {
+            "created_at": report.created_at,
+            "content": report.content
+        }
+        if report.case is not None:
+            case = report.case
+            context['case_datetime'] = case.date_time
+            context['case_level'] = case.level
+            context['case_note'] = case.note
+            context['device_location'] = case.mq2_data[0].device.location
+            mq2_data_list = [el.as_dict() for el in case.mq2_data]
+            dht_data_list = [el.as_dict() for el in case.dht_data]
+
+            gas_dates = [el['date_time'] for el in mq2_data_list]
+            lpg = [el['lpg'] for el in mq2_data_list]
+            co = [el['co'] for el in mq2_data_list]
+            smoke = [el['smoke'] for el in mq2_data_list]
+
+            temphud_dates = [el['date_time'] for el in dht_data_list]
+            temp = [el['temp'] for el in dht_data_list]
+            hud = [el['hudimity'] for el in dht_data_list]
+
+            gas_data = {
+                "x": gas_dates,
+                "y": [lpg, co, smoke],
+                "legends": ["LPG, ppm", "CO, ppm", "Smoke, ppm"]
+            }
+
+            temphud_data = {
+                "x": temphud_dates,
+                "y": [temp, hud],
+                "legends": ["Temperature, C", "Hudimity, %"]
+            }
+
+            gas_plot = create_plot(**gas_data)
+            temphud_plot = create_plot(**temphud_data)
+            context['gas_base64'] = convert_to_base64(gas_plot)
+            context['temphud_base64'] = convert_to_base64(temphud_plot)
+
+        if report.log is not None:
+            log = report.log
+            context['log_datetime'] = log.date_time
+            context['log_recognized_objects'] = log.recognized_objects
+            context['camera_location'] = log.camera.location
+
+        return generate_pdf("report.html", context=context)
 
 
 class NotificationView(Resource):
@@ -301,5 +347,6 @@ api.add_resource(LogListAPI, '/logs')
 api.add_resource(ReportAPI, '/reports/<int:report_id>')
 api.add_resource(CreateReportAPI, '/reports')
 api.add_resource(ReportListAPI, '/reports')
+api.add_resource(GenerateReportAPI, '/report/generate/<int:report_id>')
 
 api.add_resource(CameraAPI, '/camera/<int:camera_number>')

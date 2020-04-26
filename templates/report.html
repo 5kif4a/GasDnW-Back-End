@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Report</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css"
+          integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">
+</head>
+
+
+<body>
+<div class="container">
+    <div class="col">
+        <h1>GasDnW - Gas Detection & Warning</h1>
+        <h3>Gas Leak monitoring system</h3>
+    </div>
+    <hr>
+    <div class="col">
+        <div class="d-flex justify-content-between">
+            <h4>Report</h4>
+            <h4>Date: {{ context.created_at }}</h4>
+        </div>
+        <div class="card my-2">
+            <div class="card-header">
+                Content: {{ context.content }}
+            </div>
+            <div class="card-body">
+                {% if context.case_datetime %}
+                    <p class="card-text">Case datetime: {{ context.case_datime }} -
+                        Level: {{ context.case_level }}
+                        Device location: {{ context.device_location }}<br>
+                        Case note: {{ context.case_note }}</p>
+                    <p class="card-text">
+                    <div class="row mb-2">
+                        <div class="col">
+                            <h5 class="my-2">Gas concentration</h5>
+                            <hr>
+                            <div id="gas_concentration" class="w-100 text-center">
+                                <img class="my-2" src="data:image/svg+xml;base64,{{ context.gas_base64 }}"/>
+                            </div>
+                            <hr>
+                            <h5 class="my-2">Air temperature and hudimity</h5>
+                            <div id="temp_hud" class="w-100 text-center">
+                                <img class="my-2" src="data:image/svg+xml;base64,{{ context.temphud_base64 }}"/>
+                            </div>
+                        </div>
+                    </div>
+                {% endif %}
+                {% if context.log_datetime %}
+                    <hr>
+                    <h5>>Camera logs</h5>
+                    <p class="card-text">
+                        Log datetime: {{ context.log_datetime }}<br>
+                        Camera location: {{ context.camera_location }}<br>
+                        Recognized objects: {{ context.log_recognized_objects }}
+                    </p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>
