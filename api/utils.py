@@ -10,7 +10,7 @@ import plotly.graph_objects as go
 from flask import render_template, make_response
 from flask_mail import Message
 from plotly import io
-from pywebpush import webpush
+from pywebpush import webpush, WebPushException
 
 
 def know_level(value, low, moderate, danger, emergency):
@@ -176,3 +176,23 @@ def send_web_push(subscription_information, message_body):
         vapid_private_key=VAPID_PRIVATE_KEY,
         vapid_claims=VAPID_CLAIMS
     )
+
+
+def notify_about_warning(message):
+    from api.models import Subscriber
+    subscribers = Subscriber.query.all()
+
+    for subscriber in subscribers:
+        try:
+            token = {
+                'endpoint': subscriber.endpoint,
+                'expirationTime': subscriber.expiration_time,
+                'keys': {
+                    'p256dh': subscriber.p256dh,
+                    'auth': subscriber.auth
+                }
+            }
+            send_web_push(token, message)
+        except WebPushException as e:
+            print(e)
+            continue

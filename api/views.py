@@ -6,7 +6,7 @@ from flask_restful import Resource
 from api.cv import gen_video
 from api.models import db, Device, MQ2Data, DHTData, Case, Log, Report, Subscriber
 from api.utils import check_gas_level, LevelType, get_report_context, \
-    pdf_response, send_mail_with_attachment, send_web_push
+    pdf_response, send_mail_with_attachment, notify_about_warning
 from .app import api
 
 
@@ -69,7 +69,19 @@ class MQ2API(Resource):
                     case.level = LevelType(level)
                     case.dht_data.append(last_dhtdata)
                     case.mq2_data.append(mq2data)
+
+                    db.session.flush()
+                    case_id = case.id
                     db.session.add(case)
+
+                    # делаем рассылку уведомлений
+                    message = json.dumps({
+                        "type": "case",
+                        "link": f"http://localhost:3000/logs/cases/{case_id}",
+                        "message": note
+                    })
+
+                    notify_about_warning(message)
                 else:
                     # в противном случае связываем информацию с датчиков в последний случай
                     last_case = Case.query.order_by(Case.date_time.desc()).first()
@@ -295,35 +307,28 @@ class SubscriptionAPI(Resource):
 
     def post(self):
         subscription_token = request.get_json("subscription_token")
-        print(subscription_token)
         endpoint = subscription_token.get('endpoint')
         expiration_time = subscription_token.get('expirationTime')
         p256dh = subscription_token.get('keys').get('p256dh')
         auth = subscription_token.get('keys').get('auth')
-        subscriber = Subscriber(endpoint=endpoint,
-                                expiration_time=expiration_time,
-                                p256dh=p256dh,
-                                auth=auth)
-        db.session.add(subscriber)
-        db.session.commit()
-        return Response(status=201, mimetype="application/json")
+
+        exists = db.session.query(Subscriber.id).filter_by(p256dh=p256dh).scalar() is not None
+
+        if not exists:
+            subscriber = Subscriber(endpoint=endpoint,
+                                    expiration_time=expiration_time,
+                                    p256dh=p256dh,
+                                    auth=auth)
+            db.session.add(subscriber)
+            db.session.commit()
+            return "Subscribed", 201
+        return "OK", 200
 
 
 class NotificationAPI(Resource):
     def post(self):
-        message = "Push Test v1"
         try:
-            subscribers = Subscriber.query.all()
-            for subscriber in subscribers:
-                token = {
-                    'endpoint': subscriber.endpoint,
-                    'expirationTime': subscriber.expiration_time,
-                    'keys': {
-                        'p256dh': subscriber.p256dh,
-                        'auth': subscriber.auth
-                    }
-                }
-                send_web_push(token, message)
+            notify_about_warning("test push")
             return "OK", 200
         except Exception as e:
             print(e)

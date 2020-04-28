@@ -19,7 +19,7 @@ class Device(db.Model):
 
 
 class Case(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True, nullable=True)
     date_time = db.Column(db.DateTime, default=datetime.now)
     note = db.Column(db.Text, nullable=False)
     level = db.Column(db.Enum(LevelType), nullable=False)
@@ -85,7 +85,7 @@ class Camera(db.Model):
 
 
 class Log(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True, nullable=True)
     date_time = db.Column(db.DateTime, default=datetime.now)
     camera_id = db.Column(db.Integer, db.ForeignKey('camera.id'))
     recognized_objects = db.Column(db.Text, nullable=True)
@@ -131,10 +131,10 @@ class Notification(db.Model):
 
 class Subscriber(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    endpoint = db.Column(db.Text)
+    endpoint = db.Column(db.Text, unique=True)
     expiration_time = db.Column(db.Text, nullable=True)
-    p256dh = db.Column(db.Text)
-    auth = db.Column(db.Text)
+    p256dh = db.Column(db.Text, unique=True)
+    auth = db.Column(db.Text, unique=True)
 
     def __repr__(self):
         return f'<Subscriber: id: {self.id} - Token: {self.token}>'
