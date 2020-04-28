@@ -5,7 +5,7 @@ from api.config import DEBUG
 from api.models import *
 
 only_read_models = [MQ2Data, DHTData]
-models = [Device, Case, Log, Report, Notification]
+models = [Device, Case, Log, Report, Notification, Subscriber]
 
 if DEBUG:
     models.append(Camera)

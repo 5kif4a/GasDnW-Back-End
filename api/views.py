@@ -1,13 +1,18 @@
+import json
+
 from flask import request, Response
 from flask_restful import Resource
 
 from api.cv import gen_video
-from api.models import db, Device, MQ2Data, DHTData, Case, Log, Report
-from api.utils import check_gas_level, LevelType, generate_pdf, create_plot, convert_to_base64
+from api.models import db, Device, MQ2Data, DHTData, Case, Log, Report, Subscriber
+from api.utils import check_gas_level, LevelType, get_report_context, \
+    pdf_response, send_mail_with_attachment, send_web_push
 from .app import api
 
 
 # Views
+
+
 class MQ2API(Resource):
     def get(self):
         """
@@ -257,8 +262,15 @@ class CreateReportAPI(Resource):
     def post(self):
         try:
             request_data = request.get_json()
-            print(request_data)
+            content = request_data.get('content')
+            case_id = request_data.get('case_id', None)
+            log_id = request_data.get('log_id', None)
 
+            report = Report(content=content, case_id=case_id, log_id=log_id)
+            db.session.add(report)
+            db.session.commit()
+
+            return "Report created", 200
         except Exception as e:
             print(e)
             return "Internal Server Error", 500
@@ -266,67 +278,77 @@ class CreateReportAPI(Resource):
 
 class GenerateReportAPI(Resource):
     def get(self, report_id):
-        report = Report.query.get(report_id)
-        context = {
-            "created_at": report.created_at,
-            "content": report.content
-        }
-        if report.case is not None:
-            case = report.case
-            context['case_datetime'] = case.date_time
-            context['case_level'] = case.level
-            context['case_note'] = case.note
-            context['device_location'] = case.mq2_data[0].device.location
-            mq2_data_list = [el.as_dict() for el in case.mq2_data]
-            dht_data_list = [el.as_dict() for el in case.dht_data]
-
-            gas_dates = [el['date_time'] for el in mq2_data_list]
-            lpg = [el['lpg'] for el in mq2_data_list]
-            co = [el['co'] for el in mq2_data_list]
-            smoke = [el['smoke'] for el in mq2_data_list]
-
-            temphud_dates = [el['date_time'] for el in dht_data_list]
-            temp = [el['temp'] for el in dht_data_list]
-            hud = [el['hudimity'] for el in dht_data_list]
-
-            gas_data = {
-                "x": gas_dates,
-                "y": [lpg, co, smoke],
-                "legends": ["LPG, ppm", "CO, ppm", "Smoke, ppm"]
-            }
-
-            temphud_data = {
-                "x": temphud_dates,
-                "y": [temp, hud],
-                "legends": ["Temperature, C", "Hudimity, %"]
-            }
-
-            gas_plot = create_plot(**gas_data)
-            temphud_plot = create_plot(**temphud_data)
-            context['gas_base64'] = convert_to_base64(gas_plot)
-            context['temphud_base64'] = convert_to_base64(temphud_plot)
-
-        if report.log is not None:
-            log = report.log
-            context['log_datetime'] = log.date_time
-            context['log_recognized_objects'] = log.recognized_objects
-            context['camera_location'] = log.camera.location
-
-        return generate_pdf("report.html", context=context)
+        context = get_report_context(report_id)
+        return pdf_response("report.html", context=context)
 
 
-class NotificationView(Resource):
+class SubscriptionAPI(Resource):
+    """
+        POST creates a subscription
+        GET returns vapid public key which clients uses to send around push notification
+    """
+
     def get(self):
-        return
+        from .config import VAPID_PUBLIC_KEY
+        return Response(response=json.dumps({"public_key": VAPID_PUBLIC_KEY}),
+                        content_type="application/json")
 
     def post(self):
-        return
+        subscription_token = request.get_json("subscription_token")
+        print(subscription_token)
+        endpoint = subscription_token.get('endpoint')
+        expiration_time = subscription_token.get('expirationTime')
+        p256dh = subscription_token.get('keys').get('p256dh')
+        auth = subscription_token.get('keys').get('auth')
+        subscriber = Subscriber(endpoint=endpoint,
+                                expiration_time=expiration_time,
+                                p256dh=p256dh,
+                                auth=auth)
+        db.session.add(subscriber)
+        db.session.commit()
+        return Response(status=201, mimetype="application/json")
+
+
+class NotificationAPI(Resource):
+    def post(self):
+        message = "Push Test v1"
+        try:
+            subscribers = Subscriber.query.all()
+            for subscriber in subscribers:
+                token = {
+                    'endpoint': subscriber.endpoint,
+                    'expirationTime': subscriber.expiration_time,
+                    'keys': {
+                        'p256dh': subscriber.p256dh,
+                        'auth': subscriber.auth
+                    }
+                }
+                send_web_push(token, message)
+            return "OK", 200
+        except Exception as e:
+            print(e)
+            return "Internal server error", 500
 
 
 class CameraAPI(Resource):
     def get(self, camera_number):
         return Response(gen_video(camera_number),
                         mimetype="multipart/x-mixed-replace; boundary=frame")
+
+
+class MailAPI(Resource):
+    def post(self):
+        try:
+            request_data = request.get_json()
+            print(request_data)
+            report_id = request_data.get('report_id')
+            recipient_mail = request_data.get('recipient_mail')
+
+            send_mail_with_attachment(report_id, recipient_mail)
+            return "Mail sent", 200
+        except Exception as e:
+            print(e)
+            return "Internal Server Error", 500
 
 
 # Routes
@@ -350,3 +372,7 @@ api.add_resource(ReportListAPI, '/reports')
 api.add_resource(GenerateReportAPI, '/report/generate/<int:report_id>')
 
 api.add_resource(CameraAPI, '/camera/<int:camera_number>')
+api.add_resource(MailAPI, '/mail')
+
+api.add_resource(SubscriptionAPI, '/subscription')
+api.add_resource(NotificationAPI, '/notification')

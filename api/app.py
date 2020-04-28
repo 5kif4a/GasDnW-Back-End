@@ -4,6 +4,7 @@ from flask_cors import CORS
 from flask_restful import Api
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
+from flask_mail import Mail
 
 from .config import cfg
 
@@ -19,9 +20,11 @@ with app.app_context():
     else:
         migrate.init_app(app, db)
 
+
 api = Api(app)  # Flask-RESTful
 admin = Admin(app, template_mode='bootstrap3')  # Flask-Admin
 CORS(app)  # Flask-CORS
+mail = Mail(app)  # Flask-Mail
 
 
 import api.views
