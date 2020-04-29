@@ -269,6 +269,16 @@ class ReportAPI(Resource):
             print(e)
             return "Internal Server Error", 500
 
+    def delete(self, report_id):
+        try:
+            report = Report.query.get(report_id)
+            db.session.delete(report)
+            db.session.commit()
+            return "OK", 200
+        except Exception as e:
+            print(e)
+            return "Internal server error", 500
+
 
 class CreateReportAPI(Resource):
     def post(self):

@@ -131,10 +131,11 @@ class Notification(db.Model):
 
 class Subscriber(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    endpoint = db.Column(db.Text, unique=True)
+    date_time = db.Column(db.DateTime, default=datetime.now)
+    endpoint = db.Column(db.Text)
     expiration_time = db.Column(db.Text, nullable=True)
-    p256dh = db.Column(db.Text, unique=True)
-    auth = db.Column(db.Text, unique=True)
+    p256dh = db.Column(db.Text)
+    auth = db.Column(db.Text)
 
     def __repr__(self):
         return f'<Subscriber: id: {self.id} - Token: {self.token}>'
