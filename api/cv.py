@@ -2,8 +2,8 @@ import cv2
 
 face_cascade = cv2.CascadeClassifier(r'D:\PyCharm Projects\GasDnW\haarcascade_frontalface_default.xml')
 cam_1 = cv2.VideoCapture(0)
-# cam_2 = cv2.VideoCapture(1)
-cameras = [cam_1]
+cam_2 = cv2.VideoCapture(1)
+cameras = [cam_1, cam_2]
 
 
 def gen_video(camera_number):

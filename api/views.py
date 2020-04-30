@@ -347,8 +347,12 @@ class NotificationAPI(Resource):
 
 class CameraAPI(Resource):
     def get(self, camera_number):
-        return Response(gen_video(camera_number),
-                        mimetype="multipart/x-mixed-replace; boundary=frame")
+        try:
+            return Response(gen_video(camera_number),
+                            mimetype="multipart/x-mixed-replace; boundary=frame")
+        except Exception as e:
+            print(e)
+            return "Internal server error", 500
 
 
 class MailAPI(Resource):
