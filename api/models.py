@@ -117,7 +117,8 @@ class Report(db.Model):
 
 class Notification(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    context = db.Column(db.Text)
+    date_time = db.Column(db.DateTime, default=datetime.now)
+    content = db.Column(db.Text)
 
     case_id = db.Column(db.Integer, db.ForeignKey('case.id'), nullable=True)
     log_id = db.Column(db.Integer, db.ForeignKey('log.id'), nullable=True)
