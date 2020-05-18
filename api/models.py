@@ -1,7 +1,7 @@
 from datetime import datetime
 
 from api.utils import LevelType
-from .app import db
+from .flask_app import db
 
 
 class Device(db.Model):

@@ -1,6 +1,6 @@
 from flask_admin.contrib.sqla import ModelView
 
-from api.app import admin
+from api.flask_app import admin
 from api.config import DEBUG
 from api.models import *
 

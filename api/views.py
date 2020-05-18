@@ -7,7 +7,7 @@ from api.cv import gen_video
 from api.models import db, Device, MQ2Data, DHTData, Case, Log, Report, Subscriber
 from api.utils import check_gas_level, LevelType, get_report_context, \
     pdf_response, send_mail_with_attachment, notify_about_warning
-from .app import api
+from .flask_app import api
 
 
 # Views

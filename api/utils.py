@@ -154,7 +154,7 @@ def get_report_context(report_id):
 
 
 def send_mail_with_attachment(report_id, recipient_mail):
-    from api.app import mail
+    from api.flask_app import mail
     subject = "GasDnW"
     body = "Gas Detection & Warning - Gas Leak Moritoring system automatically generated report"
 
