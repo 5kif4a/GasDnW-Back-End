@@ -10,6 +10,7 @@ load_dotenv(dotenv_path)
 
 DEBUG = os.environ.get('DEBUG')
 SECRET_KEY = os.environ.get("SECRET_KEY")
+CLIENT_APP_BASE_URL = os.environ.get("CLIENT_APP_BASE_URL")
 
 # Database settings
 DATABASE_USER = os.environ.get("DATABASE_USER")

@@ -3,8 +3,9 @@ import json
 from flask import request, Response
 from flask_restful import Resource
 
+from api.config import CLIENT_APP_BASE_URL
 from api.cv import gen_video
-from api.models import db, Device, MQ2Data, DHTData, Case, Log, Report, Subscriber
+from api.models import db, Device, MQ2Data, DHTData, Case, Log, Report, Subscriber, Notification
 from api.utils import check_gas_level, LevelType, get_report_context, \
     pdf_response, send_mail_with_attachment, notify_about_warning
 from .flask_app import api
@@ -72,12 +73,13 @@ class MQ2API(Resource):
 
                     db.session.flush()
                     case_id = case.id
-                    db.session.add(case)
+                    notification = Notification(content=note, log_id=case_id)
+                    db.session.add_all([case, notification])
 
                     # делаем рассылку уведомлений
                     message = json.dumps({
                         "type": "case",
-                        "link": f"http://localhost:3000/logs/cases/{case_id}",
+                        "link": f"{CLIENT_APP_BASE_URL}/logs/cases/{case_id}",
                         "message": note
                     })
 
@@ -179,8 +181,42 @@ class CaseAPI(Resource):
 
 class LogAPI(Resource):
     def get(self, log_id):
-        obj = Log.query.get(log_id)
-        return obj.as_dict(), 200
+        try:
+            obj = Log.query.get(log_id)
+            return obj.as_dict(), 200
+        except Exception as e:
+            print(e)
+            return "Internal Server Error", 500
+
+
+class CreateLogAPI(Resource):
+    def post(self):
+        try:
+            data = request.get_json()
+            log_type = data.get("log_type")
+            recognized_objects = data.get("recognized_objects")
+            camera_id = data.get("camera_id")
+
+            log = Log(camera_id=camera_id, recognized_objects=recognized_objects)
+            db.session.flush()
+            log_id = log.id
+            notification = Notification(content=recognized_objects, log_id=log_id)
+            db.session.add_all([log, notification])
+
+            message = json.dumps({
+                "type": "camera_log",
+                "link": f"{CLIENT_APP_BASE_URL}/logs/camera_logs/",
+                "message": recognized_objects
+            })
+
+            if log_type > 0:
+                notify_about_warning(message)
+
+            db.session.commit()
+
+        except Exception as e:
+            print(e)
+            return "Internal Server Error", 500
 
 
 class CaseListAPI(Resource):
@@ -381,6 +417,7 @@ api.add_resource(DHTListAPI, '/dhtlist')
 
 api.add_resource(CaseAPI, '/cases/<int:case_id>')
 api.add_resource(LogAPI, '/logs/<int:log_id>')
+api.add_resource(CreateLogAPI, '/logs')
 
 api.add_resource(CaseListAPI, '/cases')
 api.add_resource(LogListAPI, '/logs')
