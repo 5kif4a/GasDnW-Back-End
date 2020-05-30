@@ -89,6 +89,7 @@ class Log(db.Model):
     date_time = db.Column(db.DateTime, default=datetime.now)
     camera_id = db.Column(db.Integer, db.ForeignKey('camera.id'))
     recognized_objects = db.Column(db.Text, nullable=True)
+    video_filename = db.Column(db.Text, nullable=True)
 
     report = db.relationship('Report', backref='log')
     notification = db.relationship('Notification', backref='log')

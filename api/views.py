@@ -5,7 +5,7 @@ from flask_restful import Resource
 
 from api.config import CLIENT_APP_BASE_URL
 from api.cv import gen_video
-from api.models import db, Device, MQ2Data, DHTData, Case, Log, Report, Subscriber, Notification
+from api.models import db, Device, MQ2Data, DHTData, Case, Log, Report, Subscriber, Notification, Camera
 from api.utils import check_gas_level, LevelType, get_report_context, \
     pdf_response, send_mail_with_attachment, notify_about_warning
 from .flask_app import api
@@ -73,7 +73,7 @@ class MQ2API(Resource):
 
                     db.session.flush()
                     case_id = case.id
-                    notification = Notification(content=note, log_id=case_id)
+                    notification = Notification(content=note, case_id=case_id)
                     db.session.add_all([case, notification])
 
                     # делаем рассылку уведомлений
@@ -166,24 +166,37 @@ class DHTListAPI(Resource):
 
 class CaseAPI(Resource):
     def get(self, case_id):
-        case = Case.query.get(case_id)
-        mq2_data_list = [el.as_dict() for el in case.mq2_data]
-        dht_data_list = [el.as_dict() for el in case.dht_data]
+        try:
+            case = Case.query.get(case_id)
+            mq2_data_list = [el.as_dict() for el in case.mq2_data]
+            dht_data_list = [el.as_dict() for el in case.dht_data]
 
-        res = {
-            'case': case.as_dict(),
-            'mq2_data_list': mq2_data_list,
-            'dht_data_list': dht_data_list
-        }
+            res = {
+                'case': case.as_dict(),
+                'mq2_data_list': mq2_data_list,
+                'dht_data_list': dht_data_list
+            }
 
-        return res, 200
+            return res, 200
+        except Exception as e:
+            print(e)
+            return "Internal Server Error", 500
 
 
 class LogAPI(Resource):
     def get(self, log_id):
         try:
-            obj = Log.query.get(log_id)
-            return obj.as_dict(), 200
+            log = Log.query.get(log_id)
+            camera = Camera.query.get(log.camera_id)
+            location = camera.location
+
+            log_dict = log.as_dict()
+            log_dict['location'] = location
+            res = {
+                "log": log_dict
+            }
+
+            return res, 200
         except Exception as e:
             print(e)
             return "Internal Server Error", 500
@@ -196,8 +209,9 @@ class CreateLogAPI(Resource):
             log_type = data.get("log_type")
             recognized_objects = data.get("recognized_objects")
             camera_id = data.get("camera_id")
+            video_filename = data.get("filename")
 
-            log = Log(camera_id=camera_id, recognized_objects=recognized_objects)
+            log = Log(camera_id=camera_id, recognized_objects=recognized_objects, video_filename=video_filename)
             db.session.flush()
             log_id = log.id
             notification = Notification(content=recognized_objects, log_id=log_id)
