@@ -6,6 +6,7 @@ from datetime import datetime
 from types import GeneratorType
 
 import pdfkit
+import pyqrcode as pyqr
 import plotly.graph_objects as go
 from flask import render_template, make_response
 from flask_mail import Message
@@ -148,7 +149,12 @@ def get_report_context(report_id):
         log = report.log
         context['log_datetime'] = log.date_time
         context['log_recognized_objects'] = log.recognized_objects
+        context['camera_id'] = log.camera.id
         context['camera_location'] = log.camera.location
+
+    from api.config import CLIENT_APP_BASE_URL
+    qr = pyqr.create(f"{CLIENT_APP_BASE_URL}/reports/{report.id}")
+    context['qr_code'] = qr.png_as_base64_str(scale=3)
 
     return context
 

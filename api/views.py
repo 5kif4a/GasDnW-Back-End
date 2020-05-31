@@ -312,6 +312,8 @@ class ReportAPI(Resource):
                 resp['log_datetime'] = log.date_time
                 resp['log_recognized_objects'] = log.recognized_objects
                 resp['camera_location'] = log.camera.location
+                resp['camera_id'] = log.camera.id
+                resp['video_filename'] = log.video_filename
 
             return resp, 200
 

@@ -38,8 +38,8 @@
                             <div id="gas_concentration" class="w-100 text-center">
                                 <img class="my-2" src="data:image/svg+xml;base64,{{ context.gas_base64 }}"/>
                             </div>
-                            <hr>
                             <h5 class="my-2">Air temperature and hudimity</h5>
+                            <hr>
                             <div id="temp_hud" class="w-100 text-center">
                                 <img class="my-2" src="data:image/svg+xml;base64,{{ context.temphud_base64 }}"/>
                             </div>
@@ -47,14 +47,14 @@
                     </div>
                 {% endif %}
                 {% if context.log_datetime %}
-                    <hr>
                     <h5>Camera logs</h5>
                     <p class="card-text">
-                        Log datetime: {{ context.log_datetime }}<br>
-                        Camera location: {{ context.camera_location }}<br>
+                        Camera {{ context.camera_id }} - Location: {{ context.camera_location }}<br>
                         Recognized objects: {{ context.log_recognized_objects }}
+                        Log datetime: {{ context.log_datetime }}<br>
                     </p>
                 {% endif %}
+                <img src="data:image/png;base64,{{ context.qr_code }}">
             </div>
         </div>
     </div>

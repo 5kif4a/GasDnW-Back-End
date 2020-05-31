@@ -5,6 +5,7 @@ from flask_restful import Api
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from flask_mail import Mail
+from flask_compress import Compress
 
 from .config import cfg
 
@@ -25,6 +26,7 @@ api = Api(app)  # Flask-RESTful
 admin = Admin(app, template_mode='bootstrap3')  # Flask-Admin
 CORS(app)  # Flask-CORS
 mail = Mail(app)  # Flask-Mail
+Compress(app)  # Flask-Compress
 
 
 import api.views

@@ -75,7 +75,7 @@ class Camera(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     location = db.Column(db.Text)
 
-    camera = db.relationship('Log', backref='camera')
+    log = db.relationship('Log', backref='camera')
 
     def __repr__(self):
         return f'<Camera: id: {self.id} - Location: {self.location}>'
