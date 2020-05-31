@@ -84,9 +84,8 @@ def frame_in_rect(objects, frame, title, color):
         cv2.putText(frame, title, (x, y - 2), cv2.FONT_HERSHEY_SIMPLEX, 1, blue, 2)
 
 
-def send_log(recognized_objects, log_type, filename):
+def send_log(recognized_objects, filename):
     data = {
-        "log_type": log_type,
         "camera_id": CAMERA_ID,
         "recognized_objects": recognized_objects,
         "filename": filename
@@ -132,7 +131,7 @@ def gen_video():
             current_detection_time = dt.datetime.now()
 
             if is_first_detection:
-                send_log(recognized_objects="Warning! Fire detected", log_type=1, filename=filename)
+                send_log(recognized_objects="Warning! Fire detected", filename=filename)
                 last_detection_time = current_detection_time
                 is_first_detection = False
 
@@ -140,7 +139,7 @@ def gen_video():
             last_detection_time = current_detection_time
 
             if time_diff.seconds > 10:
-                send_log(recognized_objects="Warning! Fire detected", log_type=1, filename=filename)
+                send_log(recognized_objects="Warning! Fire detected", filename=filename)
 
         if fire_count == 0:
             fire_exists = False

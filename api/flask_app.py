@@ -33,5 +33,10 @@ import api.views
 import api.admin
 
 
+@app.after_request
+def after_request(response):
+    response.headers.add('Accept-Ranges', 'bytes')
+    return response
+
 if __name__ == '__main__':
     app.run()

@@ -2,6 +2,7 @@ import base64
 import enum
 import io
 import json
+import os
 from datetime import datetime
 from types import GeneratorType
 
@@ -203,3 +204,22 @@ def notify_about_warning(message):
             print(e)
             continue
 
+
+def get_chunk(filename, byte1=None, byte2=None):
+    from api.config import PROJECT_DIR
+    filepath = os.path.join(PROJECT_DIR, filename)
+    file_size = os.stat(filepath).st_size
+    start = 0
+    length = 102400
+
+    if byte1 < file_size:
+        start = byte1
+    if byte2:
+        length = byte2 + 1 - byte1
+    else:
+        length = file_size - start
+
+    with open(filepath, 'rb') as f:
+        f.seek(start)
+        chunk = f.read(length)
+    return chunk, start, length, file_size

@@ -1,4 +1,5 @@
 import json
+import re
 
 from flask import request, Response
 from flask_restful import Resource
@@ -7,7 +8,7 @@ from api.config import CLIENT_APP_BASE_URL
 from api.cv import gen_video
 from api.models import db, Device, MQ2Data, DHTData, Case, Log, Report, Subscriber, Notification, Camera
 from api.utils import check_gas_level, LevelType, get_report_context, \
-    pdf_response, send_mail_with_attachment, notify_about_warning
+    pdf_response, send_mail_with_attachment, notify_about_warning, get_chunk
 from .flask_app import api
 
 
@@ -206,26 +207,28 @@ class CreateLogAPI(Resource):
     def post(self):
         try:
             data = request.get_json()
-            log_type = data.get("log_type")
             recognized_objects = data.get("recognized_objects")
             camera_id = data.get("camera_id")
             video_filename = data.get("filename")
+            log = Log()
+            log.camera_id = camera_id
+            log.recognized_objects = recognized_objects
+            log.video_filename = video_filename
 
-            log = Log(camera_id=camera_id, recognized_objects=recognized_objects, video_filename=video_filename)
+            db.session.add(log)
             db.session.flush()
             log_id = log.id
+
             notification = Notification(content=recognized_objects, log_id=log_id)
-            db.session.add_all([log, notification])
+            db.session.add(notification)
 
             message = json.dumps({
                 "type": "camera_log",
-                "link": f"{CLIENT_APP_BASE_URL}/logs/camera_logs/",
+                "link": f"{CLIENT_APP_BASE_URL}/logs/camera_logs/{log_id}",
                 "message": recognized_objects
             })
 
-            if log_type > 0:
-                notify_about_warning(message)
-
+            notify_about_warning(message)
             db.session.commit()
 
         except Exception as e:
@@ -398,7 +401,7 @@ class NotificationAPI(Resource):
 
 
 class CameraAPI(Resource):
-    def get(self, camera_number):
+    def get(self):
         try:
             return Response(gen_video(),
                             mimetype="multipart/x-mixed-replace; boundary=frame")
@@ -407,11 +410,30 @@ class CameraAPI(Resource):
             return "Internal server error", 500
 
 
+class VideoAPI(Resource):
+    def get(self, filename):
+        range_header = request.headers.get('Range', None)
+        byte1, byte2 = 0, None
+        if range_header:
+            match = re.search(r'(\d+)-(\d*)', range_header)
+            groups = match.groups()
+
+            if groups[0]:
+                byte1 = int(groups[0])
+            if groups[1]:
+                byte2 = int(groups[1])
+
+        chunk, start, length, file_size = get_chunk(filename, byte1, byte2)
+        resp = Response(chunk, 206, mimetype='video/mp4',
+                        content_type='video/mp4', direct_passthrough=True)
+        resp.headers.add('Content-Range', 'bytes {0}-{1}/{2}'.format(start, start + length - 1, file_size))
+        return resp
+
+
 class MailAPI(Resource):
     def post(self):
         try:
             request_data = request.get_json()
-            print(request_data)
             report_id = request_data.get('report_id')
             recipient_mail = request_data.get('recipient_mail')
 
@@ -443,7 +465,8 @@ api.add_resource(CreateReportAPI, '/reports')
 api.add_resource(ReportListAPI, '/reports')
 api.add_resource(GenerateReportAPI, '/report/generate/<int:report_id>')
 
-api.add_resource(CameraAPI, '/camera/<int:camera_number>')
+api.add_resource(CameraAPI, '/camera')
+api.add_resource(VideoAPI, '/video/<string:filename>')
 api.add_resource(MailAPI, '/mail')
 
 api.add_resource(SubscriptionAPI, '/subscription')
