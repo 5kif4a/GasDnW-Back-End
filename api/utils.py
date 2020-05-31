@@ -196,3 +196,4 @@ def notify_about_warning(message):
         except WebPushException as e:
             print(e)
             continue
+

@@ -8,20 +8,17 @@ import api.utils as utils
 dotenv_path = join(dirname(__file__), '.env')
 load_dotenv(dotenv_path)
 
+PROJECT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+
 DEBUG = os.environ.get('DEBUG')
 SECRET_KEY = os.environ.get("SECRET_KEY")
 CLIENT_APP_BASE_URL = os.environ.get("CLIENT_APP_BASE_URL")
 
-# Database settings
-DATABASE_USER = os.environ.get("DATABASE_USER")
-DATABASE_PASSWORD = os.environ.get("DATABASE_PASSWORD")
-HOST = os.environ.get("HOST")
-PORT = os.environ.get("PORT")
-DATABASE_NAME = os.environ.get("DATABASE_NAME")
+CAMERA_ID = os.environ.get("CAMERA_ID")
+LOCATION = os.environ.get("LOCATION")
+API_BASE_URL = os.environ.get("API_BASE_URL")
 
-args = (DATABASE_USER, DATABASE_PASSWORD, HOST, PORT, DATABASE_NAME)
-DATABASE_URL = 'mysql://{}:{}@{}:{}/{}'.format(*args)
-SQLITE_URL = r'sqlite:///D:\PyCharm Projects\GasDnW\db.sqlite3'
+SQLITE_URL = "sqlite:///" + join(PROJECT_DIR, "db.sqlite3")
 
 PATH_TO_WKHTMLTOPDF = os.environ.get("PATH_TO_WKHTMLTOPDF")
 

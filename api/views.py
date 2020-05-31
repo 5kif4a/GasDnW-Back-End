@@ -398,7 +398,7 @@ class NotificationAPI(Resource):
 class CameraAPI(Resource):
     def get(self, camera_number):
         try:
-            return Response(gen_video(camera_number),
+            return Response(gen_video(),
                             mimetype="multipart/x-mixed-replace; boundary=frame")
         except Exception as e:
             print(e)
